@@ -1,0 +1,17 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "../styles/index.css";
+import App from "../app/App.tsx";
+
+import "@fontsource/inter";
+import "@fontsource/cormorant-garamond";
+
+import { initializeUsers } from "../utils/userStorage.ts";
+
+initializeUsers();
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);

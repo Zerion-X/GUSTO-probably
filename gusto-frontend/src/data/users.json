@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "username": "gordon",
+    "email": "gordon@gusto.com",
+    "password": "Chef123!"
+  },
+  {
+    "id": 2,
+    "username": "jamie",
+    "email": "jamie@gusto.com",
+    "password": "Recipe123!"
+  }
+]
