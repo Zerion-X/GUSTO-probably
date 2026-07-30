@@ -16,16 +16,16 @@ router.get('/:id', async (req, res) => {
         return res.status(400).send('Invalid profile id.');
 
     const profile = await Profile.findById(req.params.id)
-        .populate('favorites', 'name likes')
-        .populate('saved', 'name saves')
-        .populate('posts');
+        .populate('favorites', 'name summary')
+        .populate('saved', 'name summary')
+        .populate('posts','name summary');
 
     if (!profile) return res.status(404).send('Profile not found.');
 
     res.send(profile);
 });
 
-router.post('/', async (req, res) => {
+router.post('/',auth, async (req, res) => {
     const { error } = validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
@@ -240,7 +240,7 @@ router.patch('/:id/posts', auth, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
         return res.status(400).send('Invalid profile id.');
     if (!mongoose.Types.ObjectId.isValid(req.body.postId))
-        return res.status(400).send('Invalid post id.');
+        return res.status(400).send('Invalid recipe id.');
 
     const profile = await Profile.findByIdAndUpdate(
         req.params.id,
@@ -256,7 +256,7 @@ router.delete('/:id/posts', auth, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
         return res.status(400).send('Invalid profile id.');
     if (!mongoose.Types.ObjectId.isValid(req.body.postId))
-        return res.status(400).send('Invalid post id.');
+        return res.status(400).send('Invalid recipe id.');
 
     const profile = await Profile.findByIdAndUpdate(
         req.params.id,
@@ -266,6 +266,42 @@ router.delete('/:id/posts', auth, async (req, res) => {
 
     if (!profile) return res.status(404).send('Profile not found.');
     res.send(profile);
+});
+
+router.get('/:id/favorites', async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+        return res.status(400).send('Invalid profile id.');
+
+    const profile = await Profile.findById(req.params.id)
+        .populate('favorites', 'name summary');
+
+    if (!profile) return res.status(404).send('Profile not found.');
+
+    res.send(profile.favorites);
+});
+
+router.get('/:id/saved', async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+        return res.status(400).send('Invalid profile id.');
+
+    const profile = await Profile.findById(req.params.id)
+        .populate('saved', 'name summary');
+
+    if (!profile) return res.status(404).send('Profile not found.');
+
+    res.send(profile.saved);
+});
+
+router.get('/:id/posts', async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id))
+        return res.status(400).send('Invalid profile id.');
+
+    const profile = await Profile.findById(req.params.id)
+        .populate('posts', 'name summary');
+
+    if (!profile) return res.status(404).send('Profile not found.');
+
+    res.send(profile.posts);
 });
 
 module.exports = router;
