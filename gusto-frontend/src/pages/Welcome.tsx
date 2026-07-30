@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import type { MouseEvent } from "react";
@@ -5,6 +6,20 @@ import AnimatedBackground from "../components/Layout/AnimatedBackground";
 
 export default function Welcome() {
   const navigate = useNavigate();
+  const [welcomeText, setWelcomeText] = useState("Worth Remembering");
+
+  useEffect(() => {
+    fetch("http://localhost:1789/")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.welcomeText) {
+          setWelcomeText(data.welcomeText);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to load welcome text:", error);
+      });
+  }, []);
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -67,7 +82,7 @@ export default function Welcome() {
         >
           Discover <span className="text-[#C47A2C]">Recipes</span>
           <br />
-          Worth Remembering
+          {welcomeText}
         </motion.h1>
 
         {/* Description */}
