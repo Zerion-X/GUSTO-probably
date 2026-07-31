@@ -4,7 +4,7 @@ import { Heart, Bookmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export type RecipeCardProps = {
-  id: number;
+  id: string;
   image: string;
   name: string;
   summary: string;

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import AnimatedBackground from "../components/Layout/AnimatedBackground";
 import RecipeCard, {type RecipeCardProps, } from "../components/Recipe/RecipeCard";
 import img1 from "../assets/images (3).jpg";
@@ -7,63 +8,52 @@ import img4 from "../assets/images (4).jpg";
 import img5 from "../assets/images (5).jpg";
 import img6 from "../assets/images.jpg";
 
+type RecipeResponse = {
+  _id?: string;
+  name: string;
+  summary?: string;
+  likes?: number;
+  saves?: number;
+};
+
+const fallbackImages = [img1, img2, img3, img4, img5, img6];
+
 export default function Home() {
-  const recipes: RecipeCardProps[] = [
-    {
-      id: 1,
-      image: img1,
-      name: "Classic Pizza",
-      summary:
-        "Traditional Italian pizza with mozzarella, basil and tomato sauce.",
-      likes: 22,
-      saves: 32,
-    },
-    {
-      id: 2,
-      image: img2,
-      name: "Cheese Burger",
-      summary:
-        "Juicy homemade burger served with cheddar cheese and crispy fries.",
-      likes: 41,
-      saves: 36,
-    },
-    {
-      id: 3,
-      image: img3,
-      name: "Creamy Pasta",
-      summary:
-        "Creamy Alfredo pasta with grilled chicken and parmesan.",
-      likes: 51,
-      saves: 19,
-    },
-    {
-      id: 4,
-      image: img6,
-      name: "Pepperoni Pizza",
-      summary:
-        "A crispy pizza topped with pepperoni and mozzarella cheese.",
-      likes: 64,
-      saves: 28,
-    },
-    {
-      id: 5,
-      image: img4,
-      name: "Double Burger",
-      summary:
-        "Two juicy beef patties with cheddar and caramelized onions.",
-      likes: 38,
-      saves: 15,
-    },
-    {
-      id: 6,
-      image: img5,
-      name: "Carbonara",
-      summary:
-        "Classic Roman pasta with egg, pecorino and pancetta.",
-      likes: 73,
-      saves: 44,
-    },
-  ];
+  const [recipes, setRecipes] = useState<RecipeCardProps[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+
+  useEffect(() => {
+    async function loadRecipes() {
+      try {
+        const response = await fetch("http://localhost:1789/api/recipes");
+
+        if (!response.ok) {
+          throw new Error("Unable to load recipes");
+        }
+
+        const data: RecipeResponse[] = await response.json();
+
+        const mappedRecipes: RecipeCardProps[] = data.map((recipe, index) => ({
+          id: recipe._id ?? String(index + 1),
+          image: fallbackImages[index % fallbackImages.length],
+          name: recipe.name,
+          summary: recipe.summary ?? "A delicious recipe to try.",
+          likes: recipe.likes ?? 0,
+          saves: recipe.saves ?? 0,
+        }));
+
+        setRecipes(mappedRecipes);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void loadRecipes();
+  }, []);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#FFF8EA]">
@@ -76,6 +66,13 @@ export default function Home() {
         >
           Recipes
         </h1>
+
+        {loading && <p className="text-[#8B5A3C]">Loading recipes...</p>}
+        {error && <p className="text-[#C47A2C]">{error}</p>}
+
+        {!loading && !error && recipes.length === 0 && (
+          <p className="text-[#8B5A3C]">No recipes available right now.</p>
+        )}
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
           {recipes.map((recipe) => (
