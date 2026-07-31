@@ -7,7 +7,7 @@ const auth = require('../routes/auth');
 const profiles = require('../routes/profiles');
 const favorites = require('../routes/favorites');
 const saved = require('../routes/saved');
-const posts = require('../routes/posts')
+const posts = require('../routes/posts');
 const path = require("path");
 
 module.exports = function(app) {
