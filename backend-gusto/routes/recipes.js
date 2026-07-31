@@ -6,7 +6,7 @@ router.get('/', async (req, res) => {
   const recipes = await Recipe.find()
                       .sort('-likes')
                       .limit(10)
-                      .select('_id name summary likes saves');
+                      .select('_id name summary likes saves imageURL');
   res.send(recipes);
 });
 
@@ -17,6 +17,7 @@ router.post('/', async (req, res) => {
     likes: req.body.likes,
     saves: req.body.saves,
     ingredients: req.body.ingredients,
+    imageURL: req.body.imageURL
   });
 
   try {

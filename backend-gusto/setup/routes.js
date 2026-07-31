@@ -8,10 +8,12 @@ const profiles = require('../routes/profiles');
 const favorites = require('../routes/favorites');
 const saved = require('../routes/saved');
 const posts = require('../routes/posts')
+const path = require("path");
 
 module.exports = function(app) {
     app.use(express.json());
     app.use(cors({ origin: "http://localhost:4200" }));
+    app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
     app.use('/api/recipes', recipes);
     app.use('/', home);
     app.use('/api/users',users);

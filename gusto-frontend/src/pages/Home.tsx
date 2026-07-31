@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
 import AnimatedBackground from "../components/Layout/AnimatedBackground";
 import RecipeCard, {type RecipeCardProps, } from "../components/Recipe/RecipeCard";
-import img1 from "../assets/images (3).jpg";
-import img2 from "../assets/images (1).jpg";
-import img3 from "../assets/images (2).jpg";
-import img4 from "../assets/images (4).jpg";
-import img5 from "../assets/images (5).jpg";
-import img6 from "../assets/images.jpg";
+import img1 from "../assets/hero.png";
+
 
 type RecipeResponse = {
   _id?: string;
@@ -14,9 +10,10 @@ type RecipeResponse = {
   summary?: string;
   likes?: number;
   saves?: number;
+  imageURL?: string;
 };
 
-const fallbackImages = [img1, img2, img3, img4, img5, img6];
+const fallbackImages = [img1];
 
 export default function Home() {
   const [recipes, setRecipes] = useState<RecipeCardProps[]>([]);
@@ -37,7 +34,7 @@ export default function Home() {
 
         const mappedRecipes: RecipeCardProps[] = data.map((recipe, index) => ({
           id: recipe._id ?? String(index + 1),
-          image: fallbackImages[index % fallbackImages.length],
+          image: recipe.imageURL ? `http://localhost:1789${recipe.imageURL}` : fallbackImages[index % fallbackImages.length],
           name: recipe.name,
           summary: recipe.summary ?? "A delicious recipe to try.",
           likes: recipe.likes ?? 0,
