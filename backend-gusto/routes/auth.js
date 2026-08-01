@@ -1,11 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
+const rateLimit = require('express-rate-limit');
 const { User } = require('../models/user');
 const Joi = require('joi');
-const { doubleCsrfProtection } = require('../middleware/csrf');
+const authMiddleware = require('../middleware/auth');
+const auth = require('../middleware/auth');
 
-router.post('/', doubleCsrfProtection, async (req, res) => {
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+router.post('/', authLimiter, async (req, res) => {
     const { error } = validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
@@ -27,7 +36,9 @@ router.post('/', doubleCsrfProtection, async (req, res) => {
     res.send({ message: 'Logged in successfully' });
 });
 
-router.post('/logout', doubleCsrfProtection, (req, res) => {
+router.post('/logout',auth, authLimiter, (req, res) => {
+    authMiddleware.revokeToken(req.cookies['auth_token']);
+
     res.clearCookie('auth_token', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

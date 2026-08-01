@@ -1,0 +1,5 @@
+{
+  "db": "mongodb://localhost/Gusto",
+  "jwtPrivateKey": "dev-jwtPrivateKey",
+  "csrfSecret": "dev-csrfSecret"
+}

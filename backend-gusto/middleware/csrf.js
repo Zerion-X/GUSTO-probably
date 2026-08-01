@@ -12,4 +12,12 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
     }
 });
 
-module.exports = { generateCsrfToken, doubleCsrfProtection };
+function csrfProtectionMiddleware(req, res, next) {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+        return next();
+    }
+
+    return doubleCsrfProtection(req, res, next);
+}
+
+module.exports = { generateCsrfToken, doubleCsrfProtection, csrfProtectionMiddleware };

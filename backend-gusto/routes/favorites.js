@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const { Profile} = require('../models/profile');
 const Recipe = require('../models/recipe');
 const auth = require('../middleware/auth');
-const { doubleCsrfProtection } = require('../middleware/csrf');
 
 router.get('/', async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
@@ -18,7 +17,7 @@ router.get('/', async (req, res) => {
     res.send(profile.favorites);
 });
 
-router.patch('/', auth, doubleCsrfProtection, async (req, res) => {
+router.patch('/', auth, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.body.recipeId))
         return res.status(400).send('Invalid recipe id.');
 
@@ -54,7 +53,7 @@ router.patch('/', auth, doubleCsrfProtection, async (req, res) => {
     }
 });
 
-router.delete('/', auth, doubleCsrfProtection, async (req, res) => {
+router.delete('/', auth, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.body.recipeId))
         return res.status(400).send('Invalid recipe id.');
 

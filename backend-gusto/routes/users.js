@@ -2,16 +2,23 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
+const rateLimit = require('express-rate-limit');
 const auth = require('../middleware/auth');
-const { doubleCsrfProtection } = require('../middleware/csrf');
 const { User, validate } = require('../models/user');
+
+const registerLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false
+});
 
 router.get('/me', auth, async (req, res) => {
     const user = await User.findById(req.user._id).select('-password');
     res.send(user);
 });
 
-router.post('/', doubleCsrfProtection, async (req, res) => {
+router.post('/', registerLimiter, async (req, res) => {
     const { error } = validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 

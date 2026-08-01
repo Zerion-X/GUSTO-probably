@@ -3,7 +3,6 @@ const router = express.Router({ mergeParams: true });
 const mongoose = require('mongoose');
 const { Profile} = require('../models/profile');
 const auth = require('../middleware/auth');
-const {doubleCsrfProtection} = require('../middleware/csrf');
 
 router.get('/', async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
@@ -17,7 +16,7 @@ router.get('/', async (req, res) => {
     res.send(profile.posts);
 });
 
-router.patch('/', auth, doubleCsrfProtection, async (req, res) => {
+router.patch('/', auth, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
         return res.status(400).send('Invalid profile id.');
     if (!mongoose.Types.ObjectId.isValid(req.body.recipeId))
@@ -33,7 +32,7 @@ router.patch('/', auth, doubleCsrfProtection, async (req, res) => {
     res.send(profile);
 });
 
-router.delete('/', auth, doubleCsrfProtection, async (req, res) => {
+router.delete('/', auth, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
         return res.status(400).send('Invalid profile id.');
     if (!mongoose.Types.ObjectId.isValid(req.body.recipeId))

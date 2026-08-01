@@ -7,7 +7,13 @@ const config = require('config');
 require('./setup/routes') (app);
 require('./setup/db')();
 
-require('./setup/config')();
+try{
+    require('./setup/config')();
+}
+catch (ex) {
+    winston.error(ex.message, ex);
+    process.exit(1);
+}
 
 const port = process.env.PORT || 1789;
 const server = app.listen(port, () => {winston.info(`listenning on port ${port} ...`);})
