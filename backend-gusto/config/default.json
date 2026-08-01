@@ -1,3 +1,5 @@
 {
-  "db": "mongodb://localhost/Gusto"
+  "db": "mongodb://localhost/Gusto",
+  "jwtPrivateKey": "",
+  "csrfSecret": ""
 }

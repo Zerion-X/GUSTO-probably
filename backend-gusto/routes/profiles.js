@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const { Profile, validate } = require('../models/profile');
 const auth = require('../middleware/auth');
 const {User} = require('../models/user');
+const { doubleCsrfProtection } = require('../middleware/csrf');
 
 router.get('/', async (req, res) => {
     const profiles = await Profile.find().sort('user.name');
@@ -24,7 +25,7 @@ router.get('/:id', async (req, res) => {
     res.send(profile);
 });
 
-router.post('/',auth, async (req, res) => {
+router.post('/',auth, doubleCsrfProtection, async (req, res) => {
     const { error } = validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
@@ -46,7 +47,7 @@ router.post('/',auth, async (req, res) => {
     res.send(profile);
 });
 
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, doubleCsrfProtection, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
         return res.status(400).send('Invalid profile id.');
 
@@ -72,7 +73,7 @@ router.put('/:id', auth, async (req, res) => {
     res.send(profile);
 });
 
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, doubleCsrfProtection, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
         return res.status(400).send('Invalid profile id.');
 

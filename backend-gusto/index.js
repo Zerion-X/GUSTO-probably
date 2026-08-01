@@ -7,12 +7,9 @@ const config = require('config');
 require('./setup/routes') (app);
 require('./setup/db')();
 
-if(!config.get('jwtPrivateKey')){
-    console.error('FATAL ERROR:jwtPrivateconfig is not defined');
-    process.exit(1);
-}
+require('./setup/config')();
 
-const port = process.env.Port || 1789;
+const port = process.env.PORT || 1789;
 const server = app.listen(port, () => {winston.info(`listenning on port ${port} ...`);})
 
 module.exports = server;

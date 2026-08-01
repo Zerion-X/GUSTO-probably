@@ -1,3 +1,4 @@
 {
-    "jwtPrivateKey":"Gusto_jwtPrivateKey"
+    "jwtPrivateKey":"Gusto_jwtPrivateKey",
+    "csrfSecret": "Gusto_csrfSecret"
 }
