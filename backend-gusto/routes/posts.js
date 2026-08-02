@@ -41,7 +41,7 @@ router.delete('/', auth, async (req, res) => {
     const profile = await Profile.findByIdAndUpdate(
         req.params.id,
         { $pull: { posts: req.body.recipeId } },
-        { new: true }
+        { returnDocument: 'after' }
     );
 
     if (!profile) return res.status(404).send('Profile not found.');

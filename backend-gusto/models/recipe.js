@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Joi = require('joi');
 
 const recipeSchema = new mongoose.Schema({
     name: { type: String, required: true },
@@ -6,6 +7,7 @@ const recipeSchema = new mongoose.Schema({
     likes: { type: Number, default: 0 },
     saves: { type: Number, default: 0 },
     ingredients: [{ type: String }],
+    steps: [{ type: String }],
     imageURL: { type: String }
 });
 
@@ -18,6 +20,7 @@ function validateRecipe(recipe) {
         likes: Joi.number().default(0),
         saves: Joi.number().default(0),
         ingredients: Joi.array().items(Joi.string()),
+        steps: Joi.array().items(Joi.string()).minlength(1),
         imageURL: Joi.string()
     });
 
