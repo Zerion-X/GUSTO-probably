@@ -28,20 +28,17 @@ export default function Login() {
 
   const navigate = useNavigate();
 
-  const onSubmit = (data: LoginFormData) => {
-    const user = loginUser(data.email_username, data.password);
-
-    if (!user) {
+  const onSubmit = async (data: LoginFormData) => {
+    try {
+      const user = await loginUser(data.email_username, data.password);
+      setCurrentUser(user);
+      navigate("/home");
+    } catch (error) {
       setError("email_username", {
         type: "manual",
-        message: "Invalid username/email or password.",
+        message: error instanceof Error ? error.message : "Invalid username/email or password.",
       });
-      return;
     }
-
-    setCurrentUser(user);
-
-    navigate("/home");
   };
 
   return (

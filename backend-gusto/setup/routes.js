@@ -12,13 +12,13 @@ const cookieParser = require('cookie-parser');
 const csrf = require('../routes/csrf')
 const cspMiddleware = require('../middleware/csp');
 const { csrfProtectionMiddleware } = require('../middleware/csrf');
+const corsMiddleware = require('../middleware/cors');
 
 module.exports = function(app) {
     app.use(express.json());
     app.use(cspMiddleware);
-    app.use(cors({ origin: "http://localhost:4200" }));
+    app.use(corsMiddleware);
     app.use(cookieParser());
-
     app.use(csrfProtectionMiddleware);
     app.use('/api/recipes', recipes);
     app.use('/', home);

@@ -8,7 +8,7 @@ import GlassCard from "../components/ui/GlassCard";
 import AuthHeader from "../components/ui/AuthHeader";
 import PrimaryButton from "../components/ui/PrimaryButton";
 
-import { addUser, emailExists, usernameExists } from "../utils/userStorage";
+import { registerUser } from "../utils/userStorage";
 
 type SignupFormData = {
   email: string;
@@ -29,26 +29,30 @@ export default function Signup() {
 
   const navigate = useNavigate();
 
-  const onSubmit = (data: SignupFormData) => {
-    if (emailExists(data.email)) {
-      setError("email", {
-        type: "manual",
-        message: "This email is already registered.",
-      });
-      return;
+  const onSubmit = async (data: SignupFormData) => {
+    try {
+      await registerUser(data.username, data.email, data.password);
+      navigate("/login");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to create account.";
+
+      if (message.includes("Email")) {
+        setError("email", {
+          type: "manual",
+          message,
+        });
+      } else if (message.includes("Username")) {
+        setError("username", {
+          type: "manual",
+          message,
+        });
+      } else {
+        setError("email", {
+          type: "manual",
+          message,
+        });
+      }
     }
-
-    if (usernameExists(data.username)) {
-      setError("username", {
-        type: "manual",
-        message: "This username is already registered.",
-      });
-      return;
-    }
-
-    addUser(data.username, data.email, data.password);
-
-    navigate("/login");
   };
 
   return (

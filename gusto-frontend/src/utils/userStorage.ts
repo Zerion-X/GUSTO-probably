@@ -1,107 +1,149 @@
-import usersData from "../data/users.json";
-
 export interface User {
-  id: number;
+  id: string;
   username: string;
   email: string;
-  password: string;
+  token?: string;
 }
 
-const STORAGE_KEY = "gusto-users";
+const STORAGE_KEY = "gusto-current-user";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:1789";
 
-/**
- * Creates the fake database the first time
- * the application is opened.
- */
-export function initializeUsers() {
-  if (!localStorage.getItem(STORAGE_KEY)) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(usersData));
+function saveCurrentUser(user: User) {
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+}
+
+function getStoredUser(): User | null {
+  const raw = sessionStorage.getItem(STORAGE_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+let cachedCsrfToken: string | null = null;
+
+async function fetchCsrfToken(): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/api/csrf-token`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(
+      `Failed to fetch CSRF token (${response.status}): ${message || response.statusText}`
+    );
   }
+
+  const data = await response.json();
+  const token: string = data.csrfToken;
+  cachedCsrfToken = token;
+  return token;
 }
 
-/**
- * Returns every registered user.
- */
-export function getUsers(): User[] {
-  const users = localStorage.getItem(STORAGE_KEY);
-
-  return users ? JSON.parse(users) : [];
+async function getCsrfToken(forceRefresh = false): Promise<string> {
+  if (!forceRefresh && cachedCsrfToken) {
+    return cachedCsrfToken;
+  }
+  return fetchCsrfToken();
 }
 
-/**
- * Saves the current user list.
- */
-function saveUsers(users: User[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-}
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const method = (options.method ?? "GET").toUpperCase();
+  const isSafeMethod = ["GET", "HEAD", "OPTIONS"].includes(method);
 
-/**
- * Checks whether an email already exists.
- */
-export function emailExists(email: string): boolean {
-  return getUsers().some(
-    (user) => user.email.toLowerCase() === email.toLowerCase(),
-  );
-}
+  const doFetch = async (csrfToken?: string) => {
+    const headers = new Headers(options.headers);
+    headers.set("Content-Type", "application/json");
 
-/**
- * Checks whether a username already exists.
- */
-export function usernameExists(username: string): boolean {
-  return getUsers().some(
-    (user) => user.username.toLowerCase() === username.toLowerCase(),
-  );
-}
+    if (!isSafeMethod && csrfToken) {
+      headers.set("x-csrf-token", csrfToken);
+    }
 
-/**
- * Adds a new user.
- */
-export function addUser(username: string, email: string, password: string) {
-  const users = getUsers();
-
-  const newUser: User = {
-    id: Date.now(),
-    username,
-    email,
-    password,
+    return fetch(`${API_BASE_URL}${path}`, {
+      credentials: "include",
+      ...options,
+      headers,
+    });
   };
 
-  users.push(newUser);
+  let response: Response;
 
-  saveUsers(users);
+  if (isSafeMethod) {
+    response = await doFetch();
+  } else {
+    let token = await getCsrfToken();
+    response = await doFetch(token);
+
+    if (response.status === 403) {
+      token = await getCsrfToken(true);
+      response = await doFetch(token);
+    }
+  }
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || response.statusText);
+  }
+
+  return response.json();
 }
 
-/**
- * Checks login credentials.
- */
-export function loginUser(
+export async function registerUser(
+  username: string,
+  email: string,
+  password: string,
+): Promise<User> {
+  const result = await request<{
+    user: { _id: string; name: string; email: string };
+    token: string;
+  }>("/api/users", {
+    method: "POST",
+    body: JSON.stringify({ name: username, email, password }),
+  });
+
+  return {
+    id: result.user._id,
+    username: result.user.name,
+    email: result.user.email,
+    token: result.token,
+  };
+}
+
+export async function loginUser(
   emailOrUsername: string,
   password: string,
-): User | null {
-  const users = getUsers();
+): Promise<User> {
+  const result = await request<{
+    message: string;
+    user: { _id: string; name: string; email: string };
+    token: string;
+  }>("/api/auth", {
+    method: "POST",
+    body: JSON.stringify({ emailOrUsername, password }),
+  });
 
-  return (
-    users.find(
-      (user) =>
-        (user.email.toLowerCase() === emailOrUsername.toLowerCase() ||
-          user.username.toLowerCase() === emailOrUsername.toLowerCase()) &&
-        user.password === password,
-    ) || null
-  );
+  return {
+    id: result.user._id,
+    username: result.user.name,
+    email: result.user.email,
+    token: result.token,
+  };
 }
 
-const CURRENT_USER_KEY = "gusto-current-user";
+export async function logoutUser(): Promise<void> {
+  const currentUser = getStoredUser();
+  const token = currentUser?.token;
+
+  await request<void>("/api/auth/logout", {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+
+  sessionStorage.removeItem(STORAGE_KEY);
+}
 
 export function setCurrentUser(user: User) {
-  sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+  saveCurrentUser(user);
 }
 
 export function getCurrentUser(): User | null {
-  const user = sessionStorage.getItem(CURRENT_USER_KEY);
-
-  return user ? JSON.parse(user) : null;
-}
-
-export function logoutUser() {
-  sessionStorage.removeItem(CURRENT_USER_KEY);
+  return getStoredUser();
 }

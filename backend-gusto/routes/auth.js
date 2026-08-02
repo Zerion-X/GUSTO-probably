@@ -6,6 +6,7 @@ const { User } = require('../models/user');
 const Joi = require('joi');
 const authMiddleware = require('../middleware/auth');
 const auth = require('../middleware/auth');
+const _ = require('lodash');
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -18,11 +19,17 @@ router.post('/', authLimiter, async (req, res) => {
     const { error } = validate(req.body);
     if (error) return res.status(400).send(error.details[0].message);
 
-    let user = await User.findOne({ email: req.body.email });
-    if (!user) return res.status(400).send('Invalid email or password.');
+    let user = await User.findOne({
+        $or: [
+            { email: req.body.emailOrUsername },
+            { name: req.body.emailOrUsername }
+        ]
+    });
+
+    if (!user) return res.status(400).send('Invalid username/email or password.');
 
     const validPassword = await bcrypt.compare(req.body.password, user.password);
-    if (!validPassword) return res.status(400).send('Invalid email or password.');
+    if (!validPassword) return res.status(400).send('Invalid username/email or password.');
 
     const token = user.generateAuthToken();
 
@@ -33,7 +40,11 @@ router.post('/', authLimiter, async (req, res) => {
         maxAge: 3600000
     });
 
-    res.send({ message: 'Logged in successfully' });
+    res.send({
+        message: 'Logged in successfully',
+        token,
+        user: _.pick(user, ['_id', 'name', 'email'])
+    });
 });
 
 router.post('/logout',auth, authLimiter, (req, res) => {
@@ -49,7 +60,7 @@ router.post('/logout',auth, authLimiter, (req, res) => {
 
 function validate(user) {
     const schema = Joi.object({
-        email: Joi.string().min(5).max(255).required().email(),
+        emailOrUsername: Joi.string().min(3).max(255).required(),
         password: Joi.string().min(5).max(255).required()
     });
 
