@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
+const _ = require('lodash');
 const rateLimit = require('express-rate-limit');
 const { User } = require('../models/user');
+const { Profile } = require('../models/profile');
 const Joi = require('joi');
 const authMiddleware = require('../middleware/auth');
 const auth = require('../middleware/auth');
-const _ = require('lodash');
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -31,6 +32,8 @@ router.post('/', authLimiter, async (req, res) => {
     const validPassword = await bcrypt.compare(req.body.password, user.password);
     if (!validPassword) return res.status(400).send('Invalid username/email or password.');
 
+    const profile = await Profile.findOne({ 'user._id': user._id });
+
     const token = user.generateAuthToken();
 
     res.cookie('auth_token', token, {
@@ -43,11 +46,12 @@ router.post('/', authLimiter, async (req, res) => {
     res.send({
         message: 'Logged in successfully',
         token,
-        user: _.pick(user, ['_id', 'name', 'email'])
+        user: _.pick(user, ['_id', 'name', 'email']),
+        profileId: profile ? profile._id : null
     });
 });
 
-router.post('/logout',auth, authLimiter, (req, res) => {
+router.post('/logout', auth, authLimiter, (req, res) => {
     authMiddleware.revokeToken(req.cookies['auth_token']);
 
     res.clearCookie('auth_token', {

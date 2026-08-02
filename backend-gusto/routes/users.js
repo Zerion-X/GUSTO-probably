@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
+const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
 const auth = require('../middleware/auth');
 const { User, validate } = require('../models/user');
+const { Profile } = require('../models/profile');
 
 const registerLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -35,7 +37,34 @@ router.post('/', registerLimiter, async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(user.password, salt);
 
-    await user.save();
+    let profile;
+    const session = await mongoose.startSession();
+
+    try {
+        await session.withTransaction(async () => {
+            await user.save({ session });
+
+            profile = new Profile({
+                _id: user._id,
+                user: {
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email
+                },
+                favorites: [],
+                posts: [],
+                saved: []
+            });
+
+            await profile.save({ session });
+        });
+    }
+    catch (ex) {
+        return res.status(500).send(`Failed to register user: ${ex.message}`);
+    }
+    finally {
+        session.endSession();
+    }
 
     const token = user.generateAuthToken();
 
@@ -48,7 +77,8 @@ router.post('/', registerLimiter, async (req, res) => {
 
     res.send({
         token,
-        user: _.pick(user, ['_id', 'name', 'email'])
+        user: _.pick(user, ['_id', 'name', 'email']),
+        profile: _.pick(profile, ['_id', 'favorites', 'posts', 'saved'])
     });
 });
 
