@@ -3,6 +3,7 @@ import AnimatedBackground from "../components/Layout/AnimatedBackground";
 import RecipeCard, {type RecipeCardProps, } from "../components/Recipe/RecipeCard";
 import img1 from "../assets/hero.png";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:1789";
 
 type RecipeResponse = {
   _id?: string;
@@ -24,7 +25,7 @@ export default function Home() {
   useEffect(() => {
     async function loadRecipes() {
       try {
-        const response = await fetch("http://localhost:1789/api/recipes");
+        const response = await fetch(`${API_BASE_URL}/api/recipes`);
 
         if (!response.ok) {
           throw new Error("Unable to load recipes");
@@ -32,14 +33,22 @@ export default function Home() {
 
         const data: RecipeResponse[] = await response.json();
 
-        const mappedRecipes: RecipeCardProps[] = data.map((recipe, index) => ({
-          id: recipe._id ?? String(index + 1),
-          image: recipe.imageURL ? `http://localhost:1789${recipe.imageURL}` : fallbackImages[index % fallbackImages.length],
-          name: recipe.name,
-          summary: recipe.summary ?? "A delicious recipe to try.",
-          likes: recipe.likes ?? 0,
-          saves: recipe.saves ?? 0,
-        }));
+        const mappedRecipes: RecipeCardProps[] = data.map((recipe, index) => {
+          const image = recipe.imageURL
+            ? recipe.imageURL.startsWith("http")
+              ? recipe.imageURL
+              : `${API_BASE_URL}${recipe.imageURL}`
+            : fallbackImages[index % fallbackImages.length];
+
+          return {
+            id: recipe._id ?? String(index + 1),
+            image,
+            name: recipe.name,
+            summary: recipe.summary ?? "A delicious recipe to try.",
+            likes: recipe.likes ?? 0,
+            saves: recipe.saves ?? 0,
+          };
+        });
 
         setRecipes(mappedRecipes);
       } catch (err) {
