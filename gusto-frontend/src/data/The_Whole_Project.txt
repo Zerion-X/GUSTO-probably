@@ -1,0 +1,1180 @@
+the structure of the project is this way:{
+    src[
+        app[
+            app.tsx
+        ]
+        assets[
+            //nothing important
+        ]
+        components[
+            Layout[
+                AnimatedBackground.tsx
+                AuthLayout.tsx
+                Footer.tsx
+                MainLayout.tsx
+                Navbar.tsx
+                ]
+            Profile[
+                ProfileHeader.tsx
+                ProfilePostCard.tsx
+                ProfileStats.tsx
+            ]
+            Recipe[
+                RecipeCard.tsx
+            ]
+            ui[
+                AuthHeader.tsx
+                GLassCard.tsx
+                PrimaryButtonn.tsx
+            ]
+            FormField.tsx
+            ProtectedRoute.tsx
+        ]
+        container[main.tsx]
+        core[
+            router.tsx
+            interfaces[
+                IFormField.ts
+                Post.ts
+            ]
+        ]
+        data[
+            recipes.ts
+            users.json
+        ]
+        pages[
+            ErrorPage.tsx
+            Home.tsx
+            Login.tsx
+            RecipeCollectionPage.tsx
+            RecipePage.tsx
+            Register.tsx
+            RootLayout.tsx
+            Signup.tsx
+            UserManagment.tsx
+            Welcome.tsx
+        ]
+        styles[
+            index.css
+        ]
+        utils[
+            recipeInteractions.ts
+            userStorage.ts
+        ]
+    ]
+}
+
+
+now i ll give you the .tsx files  in pages one by one:
+
+    ErrorPage.tsx{
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import AnimatedBackground from "../components/Layout/AnimatedBackground";
+
+export default function ErrorPage() {
+  const navigate = useNavigate();
+  return (
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#FFF8EA]">
+      <AnimatedBackground />
+
+      {/* Watermark */}
+      <h1 className="pointer-events-none absolute select-none text-[22vw] font-black tracking-[0.2em] text-[#8B5A3C]/5">
+        404
+      </h1>
+
+      <motion.section
+        initial={{ opacity: 0, y: 35 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="relative z-10 flex max-w-2xl flex-col items-center px-6 text-center"
+      >
+        <span className="text-sm uppercase tracking-[0.8em] text-[#8B5A3C]">
+          GUSTO
+        </span>
+
+        <h2
+          className="mt-6 text-6xl leading-tight text-[#3A2419]"
+          style={{
+            fontFamily: "Cormorant Garamond, serif",
+          }}
+        >
+          Lost in the Kitchen?
+        </h2>
+
+        <p className="mt-6 max-w-lg text-lg leading-8 text-[#4D352B]/80">
+          The recipe you're looking for couldn't be found. It may have been
+          moved, deleted, or the address might be incorrect.
+        </p>
+
+        <motion.button
+          onClick={() => navigate("/home")}
+          className="
+group
+relative
+mt-14
+overflow-hidden
+rounded-full
+border
+border-white/30
+bg-white/10
+backdrop-blur-xl
+px-10
+py-4
+text-lg
+font-medium
+text-[#FFF8EA]
+transition-all
+duration-500
+hover:-translate-y-1
+hover:shadow-[0_0_45px_rgba(229,155,30,0.45)]
+"
+          initial={{
+            opacity: 0,
+            scale: 0.85,
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+          }}
+          transition={{
+            delay: 1,
+            type: "spring",
+            stiffness: 150,
+          }}
+        >
+          <span className="relative z-10">Enter the Kitchen</span>
+
+          <div className="absolute inset-0 bg-gradient-to-r from-[#8B5A3C] to-[#9A5B2E]" />
+
+          <div className="absolute -left-full top-0 h-full w-full bg-white/20 transition-all duration-700 group-hover:left-full" />
+        </motion.button>
+      </motion.section>
+    </main>
+  );
+}
+
+    }
+
+
+    Home.tsx{
+import AnimatedBackground from "../components/Layout/AnimatedBackground";
+import RecipeCard from "../components/Recipe/RecipeCard";
+import { recipes } from "../data/recipes";
+
+export default function Home() {
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#FFF8EA]">
+      <AnimatedBackground />
+
+      <main className="relative z-10 mx-auto max-w-7xl px-8 py-12">
+        <h1
+          className="mb-10 text-6xl text-[#3A2419]"
+          style={{ fontFamily: "Cormorant Garamond, serif" }}
+        >
+          Recipes
+        </h1>
+
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
+          {recipes.map((recipe) => (
+            <RecipeCard key={recipe.id} {...recipe} />
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+    }
+
+
+    Login.tsx{
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Link, useNavigate } from "react-router-dom";
+
+import { loginSchema } from "../validation/Validation";
+import FormField from "../components/FormField";
+import AnimatedBackground from "../components/Layout/AnimatedBackground";
+import GlassCard from "../components/ui/GlassCard";
+import AuthHeader from "../components/ui/AuthHeader";
+import PrimaryButton from "../components/ui/PrimaryButton";
+import { loginUser, setCurrentUser } from "../utils/userStorage";
+
+
+type LoginFormData = {
+  email_username: string;
+  password: string;
+};
+
+export default function Login() {
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: yupResolver(loginSchema),
+  });
+
+  const navigate = useNavigate();
+
+  const onSubmit = (data: LoginFormData) => {
+    const user = loginUser(data.email_username, data.password);
+
+    if (!user) {
+      setError("email_username", {
+        type: "manual",
+        message: "Invalid username/email or password.",
+      });
+      return;
+    }
+
+    setCurrentUser(user);
+
+    navigate("/home");
+  };
+
+  return (
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#FFF8EA] px-6">
+      <AnimatedBackground />
+
+      <GlassCard>
+        <AuthHeader
+          title="Welcome"
+          highlight="Back"
+          description="Sign in and continue discovering delicious recipes."
+        />
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <FormField
+            label="Email or Username"
+            name="email_username"
+            placeholder="Enter your email or username"
+            register={register}
+            error={errors.email_username}
+          />
+
+          <FormField
+            label="Password"
+            name="password"
+            type="password"
+            placeholder="Enter your password"
+            register={register}
+            error={errors.password}
+          />
+
+          <PrimaryButton type="submit">Login</PrimaryButton>
+        </form>
+
+        <p className="mt-8 text-center text-sm text-[#8B5A3C]">
+          Don't have an account?{" "}
+          <Link
+            to="/signup"
+            className="font-semibold text-[#C47A2C] transition hover:text-[#E59B1E]"
+          >
+            Create one
+          </Link>
+        </p>
+      </GlassCard>
+    </main>
+  );
+}
+
+    }
+
+
+    RecipeCollectionPage.tsx{
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import AnimatedBackground from "../components/Layout/AnimatedBackground";
+import RecipeCard from "../components/Recipe/RecipeCard";
+import { recipes } from "../data/recipes";
+import {
+  getLikedRecipeIds,
+  getSavedRecipeIds,
+} from "../utils/recipeInteractions";
+import { getCurrentUser } from "../utils/userStorage";
+
+type RecipeCollectionPageProps = {
+  type: "favorites" | "saved";
+};
+
+export default function RecipeCollectionPage({
+  type,
+}: RecipeCollectionPageProps) {
+  const navigate = useNavigate();
+  const currentUser = getCurrentUser();
+  const likedRecipeIds = getLikedRecipeIds();
+  const savedRecipeIds = getSavedRecipeIds();
+
+  const isFavorites = type === "favorites";
+  const recipeIds = isFavorites ? likedRecipeIds : savedRecipeIds;
+  const heading = isFavorites ? "Favorite Recipes" : "Saved Recipes";
+  const emptyMessage = isFavorites
+    ? "You have not liked any recipes yet."
+    : "You have not saved any recipes yet.";
+
+  const visibleRecipes = recipes.filter((recipe) =>
+    recipeIds.includes(recipe.id),
+  );
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#FFF8EA]">
+      <AnimatedBackground />
+
+      <main className="relative z-10 mx-auto max-w-7xl px-6 py-10 lg:px-8">
+        <button
+          type="button"
+          onClick={() =>
+            navigate(currentUser ? `/profile/${currentUser.username}` : "/home")
+          }
+          className="mb-6 flex items-center gap-2 rounded-full border border-[#C47A2C]/30 bg-white/70 px-4 py-2 text-[#8B5A3C] transition hover:bg-white"
+        >
+          <ArrowLeft size={18} />
+          Back to profile
+        </button>
+
+        <h1
+          className="mb-8 text-5xl text-[#3A2419]"
+          style={{ fontFamily: "Cormorant Garamond, serif" }}
+        >
+          {heading}
+        </h1>
+
+        {visibleRecipes.length === 0 ? (
+          <div className="rounded-[28px] border border-white/40 bg-white/50 p-10 text-center shadow-2xl backdrop-blur-xl">
+            <p className="text-lg text-[#8B5A3C]">{emptyMessage}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
+            {visibleRecipes.map((recipe) => (
+              <RecipeCard key={recipe.id} {...recipe} />
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+    }
+
+
+    RecipePage.tsx{
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Clock3, ChefHat, Heart, Bookmark } from "lucide-react";
+import { getRecipeById } from "../data/recipes";
+import AnimatedBackground from "../components/Layout/AnimatedBackground";
+
+export default function RecipePage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const recipe = getRecipeById(id);
+
+  if (!recipe) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#FFF8EA] px-6 text-center">
+        <div className="rounded-[28px] border border-white/40 bg-white/50 p-10 shadow-2xl backdrop-blur-xl">
+          <h1 className="mb-3 text-3xl text-[#3A2419]">Recipe not found</h1>
+          <p className="mb-6 text-[#8B5A3C]">
+            This recipe may have been removed or the link is invalid.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/home")}
+            className="rounded-full bg-[#C47A2C] px-5 py-2 font-medium text-white transition hover:bg-[#a95f14]"
+          >
+            Back to Kitchen
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#FFF8EA]">
+      <AnimatedBackground />
+
+      <main className="relative z-10 mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10 lg:px-8">
+        <button
+          type="button"
+          onClick={() => navigate("/home")}
+          className="flex w-fit items-center gap-2 rounded-full border border-[#C47A2C]/30 bg-white/70 px-4 py-2 text-[#8B5A3C] transition hover:bg-white"
+        >
+          <ArrowLeft size={18} />
+          Back to recipes
+        </button>
+
+        <section className="overflow-hidden rounded-[32px] border border-white/40 bg-white/50 shadow-2xl backdrop-blur-xl">
+          <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="relative h-80 lg:h-full">
+              <img
+                src={recipe.image}
+                alt={recipe.name}
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute bottom-6 left-6 right-6">
+                <p className="mb-2 inline-block rounded-full bg-white/20 px-3 py-1 text-sm text-white backdrop-blur">
+                  {recipe.difficulty} • {recipe.time}
+                </p>
+                <h1
+                  className="text-4xl text-white drop-shadow-lg sm:text-5xl"
+                  style={{ fontFamily: "Cormorant Garamond, serif" }}
+                >
+                  {recipe.name}
+                </h1>
+              </div>
+            </div>
+
+            <div className="p-8 lg:p-10">
+              <p className="text-lg leading-8 text-[#8B5A3C]">
+                {recipe.description}
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-4">
+                <div className="flex items-center gap-2 rounded-full bg-[#FFF3E3] px-4 py-2 text-[#C47A2C]">
+                  <Heart size={18} fill="currentColor" />
+                  <span>{recipe.likes}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-full bg-[#FFF3E3] px-4 py-2 text-[#C47A2C]">
+                  <Bookmark size={18} fill="currentColor" />
+                  <span>{recipe.saves}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-full bg-[#FFF3E3] px-4 py-2 text-[#C47A2C]">
+                  <ChefHat size={18} />
+                  <span>{recipe.author}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-full bg-[#FFF3E3] px-4 py-2 text-[#C47A2C]">
+                  <Clock3 size={18} />
+                  <span>{recipe.time}</span>
+                </div>
+              </div>
+
+              <div className="mt-8 grid gap-8 md:grid-cols-2">
+                <div>
+                  <h2 className="mb-3 text-2xl text-[#3A2419]">Ingredients</h2>
+                  <ul className="space-y-2 text-[#8B5A3C]">
+                    {recipe.ingredients.map((ingredient) => (
+                      <li key={ingredient} className="flex items-start gap-2">
+                        <span className="mt-2 h-2 w-2 rounded-full bg-[#C47A2C]" />
+                        <span>{ingredient}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h2 className="mb-3 text-2xl text-[#3A2419]">Steps</h2>
+                  <ol className="space-y-3 text-[#8B5A3C]">
+                    {recipe.steps.map((step, index) => (
+                      <li key={step} className="flex gap-3">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#C47A2C] text-sm font-semibold text-white">
+                          {index + 1}
+                        </span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+    }
+
+
+    Register.tsx{
+import { Link } from "react-router-dom";
+
+export default function Register() {
+
+    return(
+   <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+      }}
+    >
+      <h1 style={{ fontSize: "52px", marginBottom: "20px" }}>
+        <Link to="/login" style={{ textDecoration: "none", color: "black", backgroundColor: "lightgreen", padding: "25px", borderRadius: "8px" }}>
+          Login       
+        </Link>
+      </h1>
+
+      <p>Don't have an account?</p>
+
+      <Link  to="/signup"  style={{ fontWeight: "bold"}}>Signup</Link>
+    </div>
+    );
+}
+    }
+
+
+    RootLayout.tsx{
+import { Outlet } from "react-router-dom";
+
+export default function RootLayout() {
+  return (
+    <>
+      <Outlet />
+    </>
+  );
+}
+
+    }
+
+
+    Signup.tsx{
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Link, useNavigate } from "react-router-dom";
+import { signupSchema } from "../validation/Validation";
+import FormField from "../components/FormField";
+import AnimatedBackground from "../components/Layout/AnimatedBackground";
+import GlassCard from "../components/ui/GlassCard";
+import AuthHeader from "../components/ui/AuthHeader";
+import PrimaryButton from "../components/ui/PrimaryButton";
+
+import { addUser, emailExists, usernameExists } from "../utils/userStorage";
+
+type SignupFormData = {
+  email: string;
+  username: string;
+  password: string;
+  confirmPassword: string;
+};
+
+export default function Signup() {
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<SignupFormData>({
+    resolver: yupResolver(signupSchema),
+  });
+
+  const navigate = useNavigate();
+
+  const onSubmit = (data: SignupFormData) => {
+    if (emailExists(data.email)) {
+      setError("email", {
+        type: "manual",
+        message: "This email is already registered.",
+      });
+      return;
+    }
+
+    if (usernameExists(data.username)) {
+      setError("username", {
+        type: "manual",
+        message: "This username is already registered.",
+      });
+      return;
+    }
+
+    addUser(data.username, data.email, data.password);
+
+    navigate("/login");
+  };
+
+  return (
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#FFF8EA] px-6">
+      <AnimatedBackground />
+      <GlassCard>
+        <AuthHeader
+          title="Create"
+          highlight="Account"
+          description="Join thousands of food lovers and start your culinary journey."
+        />
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <FormField
+            label="Email"
+            name="email"
+            placeholder="Enter your email"
+            register={register}
+            error={errors.email}
+          />
+
+          <FormField
+            label="Username"
+            name="username"
+            placeholder="Choose a username"
+            register={register}
+            error={errors.username}
+          />
+
+          <FormField
+            label="Password"
+            name="password"
+            type="password"
+            placeholder="Create a password"
+            register={register}
+            error={errors.password}
+          />
+
+          <FormField
+            label="Confirm Password"
+            name="confirmPassword"
+            type="password"
+            placeholder="Confirm your password"
+            register={register}
+            error={errors.confirmPassword}
+          />
+
+          <PrimaryButton type="submit">
+            Create Account
+          </PrimaryButton>
+        </form>
+
+        <p className="mt-8 text-center text-sm text-[#8B5A3C]">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="font-semibold text-[#C47A2C] transition hover:text-[#E59B1E]"
+          >
+            Sign In
+          </Link>
+        </p>
+      </GlassCard>
+    </main>
+  );
+}
+    }
+
+
+    UserManagment.tsx{
+import { useEffect, useState } from "react";
+import AnimatedBackground from "../components/Layout/AnimatedBackground";
+import ProfileHeader from "../components/Profile/ProfileHeader";
+import ProfileStat from "../components/Profile/ProfileStats";
+import PostCard from "../components/Profile/ProfilePostCard";
+import { type Post } from "../core/interfaces/Post";
+import { Navigate, useParams } from "react-router-dom";
+import { getCurrentUser } from "../utils/userStorage";
+import {
+  getLikedRecipeIds,
+  getSavedRecipeIds,
+} from "../utils/recipeInteractions";
+
+const posts: Post[] = [
+  {
+    id: 1,
+    title: "Homemade Burger",
+    description: "Best burger I've ever made.",
+    likes: 42,
+    comments: 12,
+    createdAt: "2 days ago",
+  },
+  {
+    id: 2,
+    title: "Italian Pizza",
+    description: "Fresh mozzarella and basil.",
+    likes: 80,
+    comments: 25,
+    createdAt: "1 week ago",
+  },
+];
+
+export default function UserManagement() {
+  const currentUser = getCurrentUser();
+  const { username } = useParams();
+  const [likedCount, setLikedCount] = useState(getLikedRecipeIds().length);
+  const [savedCount, setSavedCount] = useState(getSavedRecipeIds().length);
+
+  useEffect(() => {
+    const syncCounts = () => {
+      setLikedCount(getLikedRecipeIds().length);
+      setSavedCount(getSavedRecipeIds().length);
+    };
+
+    syncCounts();
+    window.addEventListener("gusto-recipe-interactions-changed", syncCounts);
+
+    return () => {
+      window.removeEventListener(
+        "gusto-recipe-interactions-changed",
+        syncCounts,
+      );
+    };
+  }, []);
+
+  const stats = [
+    {
+      title: "Posts",
+      value: 12,
+      route: undefined,
+    },
+    {
+      title: "Favorites",
+      value: likedCount,
+      route: "/profile/favorites",
+    },
+    {
+      title: "Saved Recipes",
+      value: savedCount,
+      route: "/profile/saved",
+    },
+  ];
+
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!username || username !== currentUser.username) {
+    return <Navigate to={`/profile/${currentUser.username}`} replace />;
+  }
+
+  return (
+    <main className="relative min-h-screen overflow-hidden bg-[#FFF8EA]">
+      <AnimatedBackground />
+
+      <section className="relative z-10 mx-auto max-w-6xl px-6 py-16">
+        <ProfileHeader
+          username={currentUser.username}
+          email={currentUser.email}
+        />
+
+        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {stats.map((stat) => (
+            <ProfileStat
+              key={stat.title}
+              title={stat.title}
+              value={stat.value}
+              route={stat.route}
+            />
+          ))}
+        </div>
+
+        <section className="mt-16">
+          <h2
+            className="mb-6 text-4xl text-[#3A2419]"
+            style={{
+              fontFamily: "Cormorant Garamond, serif",
+            }}
+          >
+            My Posts
+          </h2>
+
+          <div className="space-y-6">
+            {posts.map((post) => (
+              <PostCard key={post.id} {...post} />
+            ))}
+          </div>
+        </section>
+      </section>
+    </main>
+  );
+}
+
+    }
+
+
+    Welcome.tsx{
+import { useNavigate } from "react-router-dom";
+import { motion, useMotionValue, useTransform } from "framer-motion";
+import type { MouseEvent } from "react";
+import AnimatedBackground from "../components/Layout/AnimatedBackground";
+
+export default function Welcome() {
+  const navigate = useNavigate();
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const rotateX = useTransform(mouseY, [-300, 300], [8, -8]);
+  const rotateY = useTransform(mouseX, [-300, 300], [-8, 8]);
+
+  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+
+    mouseX.set(e.clientX - rect.left - rect.width / 2);
+    mouseY.set(e.clientY - rect.top - rect.height / 2);
+  };
+
+  return (
+    <motion.main
+      onMouseMove={handleMouseMove}
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#FFF8EA]"
+    >
+      <AnimatedBackground />
+
+      {/* Huge Watermark */}
+      <motion.h1
+        style={{
+          rotateX,
+          rotateY,
+        }}
+        className="pointer-events-none absolute select-none text-[18vw] font-black uppercase tracking-[0.25em] text-[#8B5A3C]/5"
+      >
+        RECIPE
+      </motion.h1>
+
+      {/* Hero */}
+      <motion.section
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: 1,
+          ease: "easeOut",
+        }}
+        className="relative z-10 flex max-w-3xl flex-col items-center px-6 text-center"
+      >
+        {/* Logo */}
+        <motion.span
+          className="mb-6 text-sm uppercase tracking-[0.8em] text-[#8B5A3C]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          GUSTO
+        </motion.span>
+
+        {/* Heading */}
+        <motion.h1
+          className="mt-4 text-[4.5rem] font-normal leading-[0.95] tracking-tight text-[#3A2419] md:text-[6rem]"
+          style={{
+            fontFamily: "Cormorant Garamond, serif",
+            textShadow: "0 8px 25px rgba(139,90,60,.06)",
+          }}
+        >
+          Discover <span className="text-[#C47A2C]">Recipes</span>
+          <br />
+          Worth Remembering
+        </motion.h1>
+
+        {/* Description */}
+        <motion.p
+          className="mt-10 max-w-md text-[18px] leading-9 font-light text-[#4D352B]/80"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            delay: 0.7,
+          }}
+        >
+          A curated collection of recipes crafted for people who enjoy cooking,
+          exploring flavors, and creating memorable meals.
+        </motion.p>
+
+        {/* Button */}
+        <motion.button
+          onClick={() => navigate("/login")}
+          className="
+group
+relative
+mt-14
+overflow-hidden
+rounded-full
+border
+border-white/30
+bg-white/10
+backdrop-blur-xl
+px-10
+py-4
+text-lg
+font-medium
+text-[#FFF8EA]
+transition-all
+duration-500
+hover:-translate-y-1
+hover:shadow-[0_0_45px_rgba(229,155,30,0.45)]
+"
+          initial={{
+            opacity: 0,
+            scale: 0.85,
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+          }}
+          transition={{
+            delay: 1,
+            type: "spring",
+            stiffness: 150,
+          }}
+        >
+          <span className="relative z-10">Enter the Kitchen</span>
+
+          <div className="absolute inset-0 bg-linear-to-r from-[#8B5A3C] to-[#9A5B2E]" />
+
+          <div className="absolute -left-full top-0 h-full w-full bg-white/20 transition-all duration-700 group-hover:left-full" />
+        </motion.button>
+
+        {/* Scroll Indicator */}
+        <div className="absolute -bottom-36 flex flex-col items-center text-[#8B5A3C]/60">
+          <span className="mb-3 text-xs uppercase tracking-[0.4em]">
+            Explore
+          </span>
+
+          <div className="h-10 w-px bg-[#8B5A3C]/30" />
+        </div>
+
+        {/* Decorative SVG */}
+        <div className="absolute -z-10 opacity-[0.06]">
+          <svg
+            width="260"
+            height="260"
+            viewBox="0 0 260 260"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M70 20V120M55 20V80M85 20V80M70 120V240"
+              stroke="#8B5A3C"
+              strokeWidth="6"
+              strokeLinecap="round"
+            />
+
+            <path
+              d="M180 20C180 55 165 70 165 95V240"
+              stroke="#8B5A3C"
+              strokeWidth="6"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+      </motion.section>
+    </motion.main>
+  );
+}
+
+    }
+
+
+
+now this is what we have in utils:
+
+    recipeInteractions.ts{
+import { getCurrentUser } from "./userStorage";
+
+const STORAGE_KEY = "gusto-recipe-interactions";
+
+type RecipeInteractions = {
+  likedRecipeIds: number[];
+  savedRecipeIds: number[];
+};
+
+type UserInteractionsMap = Record<string, RecipeInteractions>;
+
+function getUserKey() {
+  return getCurrentUser()?.username ?? "guest";
+}
+
+function readInteractions(): RecipeInteractions {
+  if (typeof window === "undefined") {
+    return { likedRecipeIds: [], savedRecipeIds: [] };
+  }
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+
+    if (!raw) {
+      return { likedRecipeIds: [], savedRecipeIds: [] };
+    }
+
+    const parsed = JSON.parse(raw) as UserInteractionsMap;
+    const userKey = getUserKey();
+
+    return parsed[userKey] ?? { likedRecipeIds: [], savedRecipeIds: [] };
+  } catch {
+    return { likedRecipeIds: [], savedRecipeIds: [] };
+  }
+}
+
+function writeInteractions(interactions: RecipeInteractions) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed: UserInteractionsMap = raw ? JSON.parse(raw) : {};
+    parsed[getUserKey()] = interactions;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    // Ignore storage write errors in this demo app.
+  }
+}
+
+export function isRecipeLiked(recipeId: number) {
+  return readInteractions().likedRecipeIds.includes(recipeId);
+}
+
+export function isRecipeSaved(recipeId: number) {
+  return readInteractions().savedRecipeIds.includes(recipeId);
+}
+
+export function getLikedRecipeIds() {
+  return readInteractions().likedRecipeIds;
+}
+
+export function getSavedRecipeIds() {
+  return readInteractions().savedRecipeIds;
+}
+
+export function toggleRecipeLike(recipeId: number) {
+  const interactions = readInteractions();
+  const isLiked = interactions.likedRecipeIds.includes(recipeId);
+
+  if (isLiked) {
+    interactions.likedRecipeIds = interactions.likedRecipeIds.filter(
+      (id) => id !== recipeId,
+    );
+  } else {
+    interactions.likedRecipeIds = [...interactions.likedRecipeIds, recipeId];
+  }
+
+  writeInteractions(interactions);
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("gusto-recipe-interactions-changed"));
+  }
+
+  return !isLiked;
+}
+
+export function toggleRecipeSave(recipeId: number) {
+  const interactions = readInteractions();
+  const isSaved = interactions.savedRecipeIds.includes(recipeId);
+
+  if (isSaved) {
+    interactions.savedRecipeIds = interactions.savedRecipeIds.filter(
+      (id) => id !== recipeId,
+    );
+  } else {
+    interactions.savedRecipeIds = [...interactions.savedRecipeIds, recipeId];
+  }
+
+  writeInteractions(interactions);
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("gusto-recipe-interactions-changed"));
+  }
+
+  return !isSaved;
+}
+
+    }
+
+
+    userStorage.ts{
+import usersData from "../data/users.json";
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  password: string;
+}
+
+const STORAGE_KEY = "gusto-users";
+
+/**
+ * Creates the fake database the first time
+ * the application is opened.
+ */
+export function initializeUsers() {
+  if (!localStorage.getItem(STORAGE_KEY)) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(usersData));
+  }
+}
+
+/**
+ * Returns every registered user.
+ */
+export function getUsers(): User[] {
+  const users = localStorage.getItem(STORAGE_KEY);
+
+  return users ? JSON.parse(users) : [];
+}
+
+/**
+ * Saves the current user list.
+ */
+function saveUsers(users: User[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+}
+
+/**
+ * Checks whether an email already exists.
+ */
+export function emailExists(email: string): boolean {
+  return getUsers().some(
+    (user) => user.email.toLowerCase() === email.toLowerCase(),
+  );
+}
+
+/**
+ * Checks whether a username already exists.
+ */
+export function usernameExists(username: string): boolean {
+  return getUsers().some(
+    (user) => user.username.toLowerCase() === username.toLowerCase(),
+  );
+}
+
+/**
+ * Adds a new user.
+ */
+export function addUser(username: string, email: string, password: string) {
+  const users = getUsers();
+
+  const newUser: User = {
+    id: Date.now(),
+    username,
+    email,
+    password,
+  };
+
+  users.push(newUser);
+
+  saveUsers(users);
+}
+
+/**
+ * Checks login credentials.
+ */
+export function loginUser(
+  emailOrUsername: string,
+  password: string,
+): User | null {
+  const users = getUsers();
+
+  return (
+    users.find(
+      (user) =>
+        (user.email.toLowerCase() === emailOrUsername.toLowerCase() ||
+          user.username.toLowerCase() === emailOrUsername.toLowerCase()) &&
+        user.password === password,
+    ) || null
+  );
+}
+
+const CURRENT_USER_KEY = "gusto-current-user";
+
+export function setCurrentUser(user: User) {
+  sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+}
+
+export function getCurrentUser(): User | null {
+  const user = sessionStorage.getItem(CURRENT_USER_KEY);
+
+  return user ? JSON.parse(user) : null;
+}
+
+export function logoutUser() {
+  sessionStorage.removeItem(CURRENT_USER_KEY);
+}
+
+    }
