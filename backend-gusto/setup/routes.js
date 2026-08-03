@@ -7,6 +7,7 @@ const auth = require('../routes/auth');
 const profiles = require('../routes/profiles');
 const favorites = require('../routes/favorites');
 const saved = require('../routes/saved');
+<<<<<<< HEAD
 const posts = require('../routes/posts')
 const cookieParser = require('cookie-parser');
 const csrf = require('../routes/csrf')
@@ -20,6 +21,13 @@ module.exports = function(app) {
     app.use(corsMiddleware);
     app.use(cookieParser());
     app.use(csrfProtectionMiddleware);
+=======
+const posts = require('../routes/posts');
+
+module.exports = function(app) {
+    app.use(express.json());
+    app.use(cors({ origin: "http://localhost:4200" }));
+>>>>>>> amirhossein
     app.use('/api/recipes', recipes);
     app.use('/', home);
     app.use('/api/users',users);

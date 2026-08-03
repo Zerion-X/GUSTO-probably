@@ -11,7 +11,7 @@ type RecipeResponse = {
   summary?: string;
   likes?: number;
   saves?: number;
-  imageURL?: string;
+  imageData?: string;
 };
 
 const fallbackImages = [img1];
@@ -34,10 +34,12 @@ export default function Home() {
         const data: RecipeResponse[] = await response.json();
 
         const mappedRecipes: RecipeCardProps[] = data.map((recipe, index) => {
-          const image = recipe.imageURL
-            ? recipe.imageURL.startsWith("http")
-              ? recipe.imageURL
-              : `${API_BASE_URL}${recipe.imageURL}`
+          const image = recipe.imageData
+            ? recipe.imageData.startsWith("data:")
+              ? recipe.imageData
+              : recipe.imageData.startsWith("http")
+                ? recipe.imageData
+                : `${API_BASE_URL}${recipe.imageData}`
             : fallbackImages[index % fallbackImages.length];
 
           return {

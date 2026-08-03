@@ -8,7 +8,7 @@ const recipeSchema = new mongoose.Schema({
     saves: { type: Number, default: 0 },
     ingredients: [{ type: String }],
     steps: [{ type: String }],
-    imageURL: { type: String }
+    imageData: { type: String }
 });
 
 const Recipe = mongoose.model('Recipe', recipeSchema);
@@ -21,7 +21,7 @@ function validateRecipe(recipe) {
         saves: Joi.number().default(0),
         ingredients: Joi.array().items(Joi.string()),
         steps: Joi.array().items(Joi.string()).minlength(1),
-        imageURL: Joi.string()
+        imageData: Joi.string()
     });
 
     return schema.validate(recipe);
