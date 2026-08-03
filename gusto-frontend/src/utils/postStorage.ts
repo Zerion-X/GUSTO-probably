@@ -1,16 +1,6 @@
 import { getCurrentUser } from "./userStorage";
-
-export interface RecipePost {
-  id: number;
-  author: string;
-  title: string;
-  description: string;
-  steps: string[];
-  image: string;
-  createdAt: string;
-  likes: number;
-  saves: number;
-}
+import { removeItemInteractions } from "./recipeInteractions";
+import type RecipePost  from "../core/interfaces/IPosts";
 
 const STORAGE_KEY = "gusto-posts";
 const NEXT_ID_KEY = "gusto-next-post-id";
@@ -162,6 +152,7 @@ export function deletePost(postId: number): boolean {
   }
 
   savePosts(filtered);
+  removeItemInteractions("post", postId);
   window.dispatchEvent(new Event("gusto-posts-changed"));
   return true;
 }

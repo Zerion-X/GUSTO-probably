@@ -1,4 +1,5 @@
 import { useForm } from "react-hook-form";
+import { useState } from "react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -20,24 +21,21 @@ export default function Login() {
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: yupResolver(loginSchema),
   });
 
+  const [authError, setAuthError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const onSubmit = (data: LoginFormData) => {
     const user = loginUser(data.email_username, data.password);
 
-    if (!user) {
-      setError("email_username", {
-        type: "manual",
-        message: "Invalid username/email or password.",
-      });
-      return;
-    }
+  if (!user) {
+    setAuthError("Invalid username/email or password.");
+    return;
+  }
 
     setCurrentUser(user);
 
@@ -56,6 +54,13 @@ export default function Login() {
         />
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          
+        {authError && (
+          <div className="mb-4 rounded-xl bg-red-100 px-4 py-2 text-red-700">
+            {authError}
+          </div>
+        )}
+          
           <FormField
             label="Email or Username"
             name="email_username"

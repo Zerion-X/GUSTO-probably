@@ -66,9 +66,8 @@ export default function RecipeCard({
     }
   }
 
-  const targetPath =
-    kind === "post" ? `/recipes/${id}?type=post` : `/recipes/${id}`;
-
+  const targetPath = kind === "post" ? `/recipes/${id}?type=post` : `/recipes/${id}`;
+  
   return (
     <motion.article
       whileHover={{
