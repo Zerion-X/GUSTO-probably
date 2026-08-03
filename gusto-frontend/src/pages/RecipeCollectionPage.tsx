@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import AnimatedBackground from "../components/Layout/AnimatedBackground";
@@ -18,13 +19,32 @@ export default function RecipeCollectionPage({
   const currentUser = getCurrentUser();
   const isFavorites = type === "favorites";
 
-  const likedRecipeIds = getLikedItemIds("recipe");
-  const savedRecipeIds = getSavedItemIds("recipe");
-  const likedPostIds = getLikedItemIds("post");
-  const savedPostIds = getSavedItemIds("post");
+  const [recipeIds, setRecipeIds] = useState<number[]>(() =>
+    isFavorites ? getLikedItemIds("recipe") : getSavedItemIds("recipe"),
+  );
+  const [postIds, setPostIds] = useState<number[]>(() =>
+    isFavorites ? getLikedItemIds("post") : getSavedItemIds("post"),
+  );
 
-  const recipeIds = isFavorites ? likedRecipeIds : savedRecipeIds;
-  const postIds = isFavorites ? likedPostIds : savedPostIds;
+  useEffect(() => {
+    const refreshIds = () => {
+      setRecipeIds(
+        isFavorites ? getLikedItemIds("recipe") : getSavedItemIds("recipe"),
+      );
+      setPostIds(
+        isFavorites ? getLikedItemIds("post") : getSavedItemIds("post"),
+      );
+    };
+
+    window.addEventListener("gusto-recipe-interactions-changed", refreshIds);
+    window.addEventListener("gusto-posts-changed", refreshIds);
+
+    return () => {
+      window.removeEventListener("gusto-recipe-interactions-changed", refreshIds);
+      window.removeEventListener("gusto-posts-changed", refreshIds);
+    };
+  }, [isFavorites]);
+
   const heading = isFavorites
     ? "Favorite Recipes & Posts"
     : "Saved Recipes & Posts";

@@ -23,11 +23,7 @@ export default function PostCard({
   const navigate = useNavigate();
 
   const handleDeletePost = (postId: number) => {
-    const deleted = deletePost(postId);
-
-    if (deleted) {
-      window.dispatchEvent(new Event("gusto-posts-changed"));
-    }
+    deletePost(postId);
   };
 
   return (
