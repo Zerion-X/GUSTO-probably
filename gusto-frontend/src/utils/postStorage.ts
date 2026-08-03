@@ -1,7 +1,9 @@
 import { getCurrentUser } from "./userStorage";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:1789";
+
 export interface RecipePost {
-  id: number;
+  id: string;
   author: string;
   title: string;
   description: string;
@@ -12,156 +14,198 @@ export interface RecipePost {
   saves: number;
 }
 
-const STORAGE_KEY = "gusto-posts";
-const NEXT_ID_KEY = "gusto-next-post-id";
-
-function getNextPostId(): number {
-  const stored = localStorage.getItem(NEXT_ID_KEY);
-
-  if (!stored) {
-    localStorage.setItem(NEXT_ID_KEY, "2");
-    return 1;
-  }
-
-  const nextId = Number(stored);
-
-  localStorage.setItem(NEXT_ID_KEY, String(nextId + 1));
-
-  return nextId;
+async function fetchCsrfToken(): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/csrf-token`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch CSRF token");
+  const data = await res.json();
+  return data.csrfToken;
 }
 
-function normalizePost(post: RecipePost): RecipePost {
+let cachedCsrfToken: string | null = null;
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const method = (options.method ?? "GET").toUpperCase();
+  const isSafe = ["GET", "HEAD", "OPTIONS"].includes(method);
+
+  const headers = new Headers(options.headers);
+  headers.set("Content-Type", "application/json");
+
+  async function doFetch(token?: string) {
+    if (token) headers.set("x-csrf-token", token);
+
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      credentials: "include",
+      ...options,
+      headers,
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || res.statusText);
+    }
+
+    return res.json() as Promise<T>;
+  }
+
+  if (isSafe) {
+    return doFetch();
+  }
+
+  if (!cachedCsrfToken) {
+    cachedCsrfToken = await fetchCsrfToken();
+  }
+
+  try {
+    return await doFetch(cachedCsrfToken);
+  } catch (err: any) {
+    if (err?.message?.includes("CSRF") || err?.message?.includes("Forbidden")) {
+      cachedCsrfToken = await fetchCsrfToken();
+      return await doFetch(cachedCsrfToken);
+    }
+    throw err;
+  }
+}
+
+function mapRecipeToPost(recipe: any): RecipePost {
   return {
-    ...post,
-    likes: post.likes ?? 0,
-    saves: post.saves ?? 0,
+    id: recipe._id,
+    author: recipe.author?.name ?? recipe.author ?? "",
+    title: recipe.name,
+    description: recipe.summary ?? recipe.description ?? "",
+    steps: recipe.steps ?? [],
+    image: recipe.imageData ?? "",
+    createdAt: recipe.createdAt ?? "",
+    likes: recipe.likes ?? 0,
+    saves: recipe.saves ?? 0,
   };
 }
 
-export function getPostById(
+export async function getPostById(
   id: string | number | undefined,
-): RecipePost | undefined {
-  return getPosts().find((post) => post.id === Number(id));
+): Promise<RecipePost | null> {
+  if (!id) return null;
+  const recipe = await request<any>(`/api/recipes/${id}`);
+  return mapRecipeToPost(recipe);
 }
 
-export function getPosts(): RecipePost[] {
-  const posts = localStorage.getItem(STORAGE_KEY);
-
-  if (!posts) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(posts) as RecipePost[];
-
-    return parsed.map(normalizePost);
-  } catch {
-    return [];
-  }
+function getProfileId(): string | undefined {
+  return getCurrentUser()?.profileId ?? getCurrentUser()?.id;
 }
 
-function savePosts(posts: RecipePost[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
-  } catch (error) {
-    console.error("Failed to save posts:", error);
-    throw new Error(
-      "Could not save the post. The omage may be too large for localStorage."
-    );
-  }
- 
+export async function getPostsByUser(
+  userId: string,
+): Promise<RecipePost[]> {
+  const profileId = userId || getProfileId();
+  if (!profileId) return [];
+  const recipes = await request<any[]>(`/api/profiles/${profileId}/posts`);
+  return recipes.map(mapRecipeToPost);
 }
 
-export function addPost(
+export async function getFavoritesByUser(
+  userId: string,
+): Promise<RecipePost[]> {
+  const profileId = userId || getProfileId();
+  if (!profileId) return [];
+  const recipes = await request<any[]>(`/api/profiles/${profileId}/favorites`);
+  return recipes.map(mapRecipeToPost);
+}
+
+export async function getSavedByUser(
+  userId: string,
+): Promise<RecipePost[]> {
+  const profileId = userId || getProfileId();
+  if (!profileId) return [];
+  const recipes = await request<any[]>(`/api/profiles/${profileId}/saved`);
+  return recipes.map(mapRecipeToPost);
+}
+
+export async function getProfile(
+  userId: string,
+): Promise<{ favorites: any[]; saved: any[]; posts: any[] }> {
+  const profileId = userId || getProfileId();
+  if (!profileId) return { favorites: [], saved: [], posts: [] };
+  return await request<any>(`/api/profiles/${profileId}`);
+}
+
+export async function addPost(
   post: Omit<RecipePost, "id" | "author" | "createdAt" | "likes" | "saves">,
-): RecipePost | undefined {
+): Promise<RecipePost | undefined> {
   const currentUser = getCurrentUser();
+  if (!currentUser) return undefined;
 
-  if (!currentUser) {
-    return undefined;
-  }
+  const profileId = currentUser.profileId ?? currentUser.id;
 
-  const posts = getPosts();
-  const createdAt = new Date().toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+  const created = await request<any>("/api/recipes", {
+    method: "POST",
+    body: JSON.stringify({
+      name: post.title,
+      summary: post.description,
+      steps: post.steps,
+      imageData: post.image,
+    }),
   });
 
-  const newPost: RecipePost = {
-    id: getNextPostId(),
-    author: currentUser.username,
-    createdAt,
-    likes: 0,
-    saves: 0,
-    ...post,
-  };
+  await request(`/api/profiles/${profileId}/posts`, {
+    method: "PATCH",
+    body: JSON.stringify({ recipeId: created._id }),
+  });
 
-  posts.unshift(newPost);
-  savePosts(posts);
-
-  window.dispatchEvent(new Event("gusto-posts-changed"));
-
-  return newPost;
+  return mapRecipeToPost(created);
 }
 
-export function updatePostInteraction(
-  postId: number,
-  field: "likes" | "saves",
-  delta: number,
-): RecipePost | undefined {
-  const posts = getPosts();
-  const targetIndex = posts.findIndex((post) => post.id === postId);
-
-  if (targetIndex === -1) {
-    return undefined;
-  }
-
-  const updatedPost = {
-    ...posts[targetIndex],
-    [field]: Math.max(0, posts[targetIndex][field] + delta),
-  } as RecipePost;
-
-  posts[targetIndex] = updatedPost;
-  savePosts(posts);
-  window.dispatchEvent(new Event("gusto-posts-changed"));
-
-  return updatedPost;
-}
-
-export function getPostsByUser(username: string) {
-  return getPosts().filter((post) => post.author === username);
-}
-
-export function updatePost(
-  postId: number,
+export async function updatePost(
+  postId: string,
   updatedFields: Partial<Omit<RecipePost, "id" | "author" | "createdAt" | "likes" | "saves">>,
-): RecipePost | undefined {
-  const posts = getPosts();
-  const targetIndex = posts.findIndex((post) => post.id === postId);
-  if (targetIndex === -1) {
-    return undefined;
-  }
-  const updatedPost = {
-    ...posts[targetIndex],
-    ...updatedFields,
-  } as RecipePost;
-  posts[targetIndex] = updatedPost;
-  savePosts(posts);
-  window.dispatchEvent(new Event("gusto-posts-changed"));
-  return updatedPost;
+): Promise<RecipePost | undefined> {
+  const updated = await request<any>(`/api/recipes/${postId}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      name: updatedFields.title,
+      summary: updatedFields.description,
+      steps: updatedFields.steps,
+      imageData: updatedFields.image,
+    }),
+  });
+
+  return mapRecipeToPost(updated);
 }
 
-export function deletePost(postId: number): boolean {
-  const posts = getPosts();
-  const filtered = posts.filter((post) => post.id !== postId);
+export async function deletePost(postId: string): Promise<boolean> {
+  const currentUser = getCurrentUser();
+  if (!currentUser) return false;
 
-  if (filtered.length === posts.length) {
-    return false;
-  }
+  const profileId = currentUser.profileId ?? currentUser.id;
 
-  savePosts(filtered);
-  window.dispatchEvent(new Event("gusto-posts-changed"));
+  await request(`/api/recipes/${postId}`, {
+    method: "DELETE",
+  });
+
+  await request(`/api/profiles/${profileId}/posts`, {
+    method: "DELETE",
+    body: JSON.stringify({ recipeId: postId }),
+  });
+
   return true;
+}
+
+export async function updatePostInteraction(
+  postId: string | number,
+  field: "likes" | "saves",
+  add: boolean,
+): Promise<void> {
+  const currentUser = getCurrentUser();
+  if (!currentUser) return;
+
+  const profileId = currentUser.profileId ?? currentUser.id;
+  const path =
+    field === "likes"
+      ? `/api/profiles/${profileId}/favorites`
+      : `/api/profiles/${profileId}/saved`;
+
+  await request(path, {
+    method: add ? "PATCH" : "DELETE",
+    body: JSON.stringify({ recipeId: String(postId) }),
+  });
 }

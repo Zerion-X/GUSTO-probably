@@ -45,7 +45,7 @@ const router = createBrowserRouter([
                 element: <RecipeCollectionPage type="saved" />,
               },
               { path: "profile/:username", element: <UserManagement /> },
-              { path: "recipes/:id", element: <RecipePage /> },
+              { path: "/recipes/:id", element: <RecipePage /> },
               { path: "/createpost", element: <AddPost /> },
               { path: "/:username/:id/edit", element: <EditPost /> },
               // { path: "settings", element: <Settings /> },

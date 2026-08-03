@@ -71,35 +71,35 @@ function writeInteractions(interactions: InteractionState) {
   }
 }
 
-function getItemKey(target: InteractionTarget, itemId: number) {
+function getItemKey(target: InteractionTarget, itemId: string) {
   return `${target}:${itemId}`;
 }
 
-export function isItemLiked(target: InteractionTarget, itemId: number) {
+export function isItemLiked(target: InteractionTarget, itemId: string) {
   return readInteractions().likedItemKeys.includes(getItemKey(target, itemId));
 }
 
-export function isItemSaved(target: InteractionTarget, itemId: number) {
+export function isItemSaved(target: InteractionTarget, itemId: string) {
   return readInteractions().savedItemKeys.includes(getItemKey(target, itemId));
 }
 
 export function getLikedItemIds(target: InteractionTarget) {
   return readInteractions()
     .likedItemKeys.filter((key) => key.startsWith(`${target}:`))
-    .map((key) => Number(key.split(":")[1]));
+    .map((key) => key.split(":")[1]);
 }
 
 export function getSavedItemIds(target: InteractionTarget) {
   return readInteractions()
     .savedItemKeys.filter((key) => key.startsWith(`${target}:`))
-    .map((key) => Number(key.split(":")[1]));
+    .map((key) => key.split(":")[1]);
 }
 
-export function isRecipeLiked(recipeId: number) {
+export function isRecipeLiked(recipeId: string) {
   return isItemLiked("recipe", recipeId);
 }
 
-export function isRecipeSaved(recipeId: number) {
+export function isRecipeSaved(recipeId: string) {
   return isItemSaved("recipe", recipeId);
 }
 
@@ -111,7 +111,7 @@ export function getSavedRecipeIds() {
   return getSavedItemIds("recipe");
 }
 
-export function toggleItemLike(target: InteractionTarget, itemId: number) {
+export function toggleItemLike(target: InteractionTarget, itemId: string) {
   const interactions = readInteractions();
   const itemKey = getItemKey(target, itemId);
   const isLiked = interactions.likedItemKeys.includes(itemKey);
@@ -133,7 +133,7 @@ export function toggleItemLike(target: InteractionTarget, itemId: number) {
   return !isLiked;
 }
 
-export function toggleItemSave(target: InteractionTarget, itemId: number) {
+export function toggleItemSave(target: InteractionTarget, itemId: string) {
   const interactions = readInteractions();
   const itemKey = getItemKey(target, itemId);
   const isSaved = interactions.savedItemKeys.includes(itemKey);
@@ -155,10 +155,10 @@ export function toggleItemSave(target: InteractionTarget, itemId: number) {
   return !isSaved;
 }
 
-export function toggleRecipeLike(recipeId: number) {
+export function toggleRecipeLike(recipeId: string) {
   return toggleItemLike("recipe", recipeId);
 }
 
-export function toggleRecipeSave(recipeId: number) {
+export function toggleRecipeSave(recipeId: string) {
   return toggleItemSave("recipe", recipeId);
 }

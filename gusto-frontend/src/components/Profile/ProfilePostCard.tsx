@@ -9,7 +9,7 @@ type PostCardProps = {
   description: string;
   likes: number;
   createdAt: string;
-  id: number;
+  id: string;
 };
 
 export default function PostCard({
@@ -22,8 +22,8 @@ export default function PostCard({
   const currentUser = getCurrentUser();
   const navigate = useNavigate();
 
-  const handleDeletePost = (postId: number) => {
-    const deleted = deletePost(postId);
+  const handleDeletePost = async (postId: string) => {
+    const deleted = await deletePost(postId);
 
     if (deleted) {
       window.dispatchEvent(new Event("gusto-posts-changed"));

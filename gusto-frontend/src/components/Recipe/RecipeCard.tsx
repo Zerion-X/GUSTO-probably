@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Heart, Bookmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getCurrentUser } from "../../utils/userStorage";
 import {
   isItemLiked,
   isItemSaved,
   toggleItemLike,
   toggleItemSave,
 } from "../../utils/recipeInteractions";
-import { updatePostInteraction } from "../../utils/postStorage";
+import { getProfile, updatePostInteraction } from "../../utils/postStorage";
 
 export type RecipeCardProps = {
   id: string;
@@ -37,10 +38,46 @@ export default function RecipeCard({
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(likes);
 
+  const currentUser = getCurrentUser();
+
   useEffect(() => {
-    setIsLiked(isItemLiked(kind, id));
-    setIsSaved(isItemSaved(kind, id));
-  }, [id, kind]);
+    if (!currentUser) {
+      setIsLiked(isItemLiked(kind, id));
+      setIsSaved(isItemSaved(kind, id));
+      return;
+    }
+
+    let mounted = true;
+
+    void (async () => {
+      try {
+        const profile = await getProfile(currentUser.id);
+        if (!mounted) return;
+
+        setIsLiked(
+          kind === "post"
+            ? isItemLiked(kind, id)
+            : (profile.favorites ?? []).some(
+                (item) => item._id?.toString() === id,
+              ),
+        );
+        setIsSaved(
+          kind === "post"
+            ? isItemSaved(kind, id)
+            : (profile.saved ?? []).some(
+                (item) => item._id?.toString() === id,
+              ),
+        );
+      } catch {
+        setIsLiked(isItemLiked(kind, id));
+        setIsSaved(isItemSaved(kind, id));
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [currentUser?.id, id, kind]);
 
   function handleSave(e: React.MouseEvent) {
     e.stopPropagation();
@@ -49,9 +86,7 @@ export default function RecipeCard({
     setIsSaved(nextSaved);
     setSaveCount((count) => (nextSaved ? count + 1 : count - 1));
 
-    if (kind === "post") {
-      updatePostInteraction(id, "saves", nextSaved ? 1 : -1);
-    }
+    void updatePostInteraction(id, "saves", nextSaved);
   }
 
   function handleLike(e: React.MouseEvent) {
@@ -61,9 +96,7 @@ export default function RecipeCard({
     setIsLiked(nextLiked);
     setLikeCount((count) => (nextLiked ? count + 1 : count - 1));
 
-    if (kind === "post") {
-      updatePostInteraction(id, "likes", nextLiked ? 1 : -1);
-    }
+    void updatePostInteraction(id, "likes", nextLiked);
   }
 
   const targetPath =

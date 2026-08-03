@@ -5,59 +5,55 @@ import ProfileStat from "../components/Profile/ProfileStats";
 import PostCard from "../components/Profile/ProfilePostCard";
 import { Navigate, useParams } from "react-router-dom";
 import { getCurrentUser } from "../utils/userStorage";
-import { getLikedItemIds, getSavedItemIds } from "../utils/recipeInteractions";
-import { getPostsByUser } from "../utils/postStorage";
-
-function getInteractionCounts() {
-  const likedCount =
-    getLikedItemIds("recipe").length + getLikedItemIds("post").length;
-  const savedCount =
-    getSavedItemIds("recipe").length + getSavedItemIds("post").length;
-
-  return { likedCount, savedCount };
-}
+import { getPostsByUser, getProfile, type RecipePost } from "../utils/postStorage";
 
 export default function UserManagement() {
   const currentUser = getCurrentUser();
   const { username } = useParams();
 
-  const initialCounts = getInteractionCounts();
-  const [likedCount, setLikedCount] = useState(initialCounts.likedCount);
-  const [savedCount, setSavedCount] = useState(initialCounts.savedCount);
-  const [userPosts, setUserPosts] = useState(() =>
-    currentUser ? getPostsByUser(currentUser.username) : [],
-  );
+  const [likedCount, setLikedCount] = useState(0);
+  const [savedCount, setSavedCount] = useState(0);
+  const [userPosts, setUserPosts] = useState<RecipePost[]>([]);
 
   useEffect(() => {
-    const syncCounts = () => {
-      const counts = getInteractionCounts();
-      setLikedCount(counts.likedCount);
-      setSavedCount(counts.savedCount);
+    const syncCounts = async () => {
+      if (!currentUser) {
+        setLikedCount(0);
+        setSavedCount(0);
+        return;
+      }
+
+      try {
+        const profile = await getProfile(currentUser.id);
+        setLikedCount((profile.favorites ?? []).length);
+        setSavedCount((profile.saved ?? []).length);
+      } catch {
+        setLikedCount(0);
+        setSavedCount(0);
+      }
     };
 
-    const refreshPosts = () => {
+    const refreshPosts = async () => {
       if (!currentUser) {
         setUserPosts([]);
         return;
       }
 
-      setUserPosts(getPostsByUser(currentUser.username));
+      const posts = await getPostsByUser(currentUser.id);
+      setUserPosts(posts);
     };
 
-    syncCounts();
-    refreshPosts();
+    void syncCounts();
+    void refreshPosts();
 
     window.addEventListener("gusto-recipe-interactions-changed", syncCounts);
     window.addEventListener("gusto-posts-changed", refreshPosts);
 
     return () => {
-      window.removeEventListener(
-        "gusto-recipe-interactions-changed",
-        syncCounts,
-      );
+      window.removeEventListener("gusto-recipe-interactions-changed", syncCounts);
       window.removeEventListener("gusto-posts-changed", refreshPosts);
     };
-  }, [currentUser?.username]);
+  }, [currentUser?.username, currentUser?.id]);
 
   const stats = [
     {

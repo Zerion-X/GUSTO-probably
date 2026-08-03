@@ -83,19 +83,6 @@ export default function Home() {
         )}
 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
-          {posts.map((post) => (
-            <RecipeCard
-              key={`post-${post.id}`}
-              id={post.id}
-              image={post.image}
-              name={post.title}
-              summary={post.description}
-              likes={post.likes}
-              saves={post.saves}
-              kind="post"
-            />
-          ))}
-
           {recipes.map((recipe) => (
             <RecipeCard key={`recipe-${recipe.id}`} {...recipe} kind="recipe" />
           ))}

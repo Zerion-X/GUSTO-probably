@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true });
 const mongoose = require('mongoose');
-const { Profile} = require('../models/profile');
-const Recipe = require('../models/recipe');
+const { Profile } = require('../models/profile');
+const { Recipe } = require('../models/recipe');
 const auth = require('../middleware/auth');
 
 router.get('/', async (req, res) => {
@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
         return res.status(400).send('Invalid profile id.');
 
     const profile = await Profile.findById(req.params.id)
-        .populate('favorites', 'name summary');
+        .populate('favorites', 'name summary imageData likes saves');
 
     if (!profile) return res.status(404).send('Profile not found.');
 
@@ -38,6 +38,10 @@ router.patch('/', auth, async (req, res) => {
         await session.withTransaction(async () => {
             profile.favorites.push(recipe._id);
             await profile.save({ session });
+
+            if (!recipe.likedBy?.some((id) => id.toString() === profile._id.toString())) {
+                recipe.likedBy.push(profile._id);
+            }
 
             recipe.likes++;
             await recipe.save({ session });
@@ -72,6 +76,12 @@ router.delete('/', auth, async (req, res) => {
             await Profile.updateOne(
                 { _id: profile._id },
                 { $pull: { favorites: req.body.recipeId } },
+                { session }
+            );
+
+            await Recipe.updateOne(
+                { _id: req.body.recipeId },
+                { $pull: { likedBy: profile._id } },
                 { session }
             );
 

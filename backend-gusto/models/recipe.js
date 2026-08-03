@@ -4,8 +4,11 @@ const Joi = require('joi');
 const recipeSchema = new mongoose.Schema({
     name: { type: String, required: true },
     summary: { type: String, minlength: 5, maxlength: 250 },
+    author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     likes: { type: Number, default: 0 },
     saves: { type: Number, default: 0 },
+    likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Profile', default: [] }],
+    savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Profile', default: [] }],
     ingredients: [{ type: String }],
     steps: [{ type: String }],
     imageData: { type: String }
@@ -19,12 +22,15 @@ function validateRecipe(recipe) {
         summary: Joi.string().min(5).max(250),
         likes: Joi.number().default(0),
         saves: Joi.number().default(0),
+        likedBy: Joi.array().items(Joi.string()),
+        savedBy: Joi.array().items(Joi.string()),
         ingredients: Joi.array().items(Joi.string()),
-        steps: Joi.array().items(Joi.string()).minlength(1),
+        steps: Joi.array().items(Joi.string()).min(1).required(),
         imageData: Joi.string()
     });
 
     return schema.validate(recipe);
 }
 
-module.exports = Recipe;
+module.exports.Recipe = Recipe;
+module.exports.validate = validateRecipe;

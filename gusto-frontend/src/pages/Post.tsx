@@ -9,7 +9,7 @@ interface editProps {
   editTitle?: string;
   editDes?: string;
   editsteps?: string[];
-  editID?: number;
+  editID?: string;
 }
 
 export default function AddPost({
@@ -24,9 +24,13 @@ export default function AddPost({
   const [image, setImage] = useState(editImg ?? "");
   const [title, setTitle] = useState(editTitle ?? "");
   const [description, setDescription] = useState(editDes ?? "");
-  const [stepCount, setStepCount] = useState(type === "edit" ? (editsteps?.length ?? 1) : 1);
+  const [stepCount, setStepCount] = useState(
+    type === "edit" ? editsteps?.length ?? 1 : 1,
+  );
   const [steps, setSteps] = useState<string[]>([""]);
-  const [editSteps, setEditSteps] = useState<string[]>(editsteps?.length ? editsteps : [""]);
+  const [editSteps, setEditSteps] = useState<string[]>(
+    editsteps?.length ? editsteps : [""],
+  );
   const [statusMessage, setStatusMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,7 +69,7 @@ export default function AddPost({
     setImage("");
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (
@@ -83,16 +87,15 @@ export default function AddPost({
 
     try {
       let postStatus;
-      if (type === "edit" && editID !== undefined){
-        postStatus = updatePost(editID, {
+      if (type === "edit" && editID !== undefined) {
+        postStatus = await updatePost(editID, {
           title: title.trim(),
           description: description.trim(),
           steps: activeSteps.map((step) => step.trim()).filter(Boolean),
           image: image || editImg || "",
         });
-
       } else {
-        postStatus = addPost({
+        postStatus = await addPost({
           title: title.trim(),
           description: description.trim(),
           steps: activeSteps.map((step) => step.trim()),

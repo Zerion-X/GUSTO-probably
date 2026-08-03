@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router({ mergeParams: true });
 const mongoose = require('mongoose');
 const { Profile } = require('../models/profile');
-const Recipe = require('../models/recipe');
+const { Recipe } = require('../models/recipe');
 const auth = require('../middleware/auth');
 
 router.get('/', async (req, res) => {
@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
         return res.status(400).send('Invalid profile id.');
 
     const profile = await Profile.findById(req.params.id)
-        .populate('saved', 'name summary');
+        .populate('saved', 'name summary imageData likes saves');
 
     if (!profile) return res.status(404).send('Profile not found.');
 
@@ -24,7 +24,6 @@ router.patch('/', auth, async (req, res) => {
     const recipe = await Recipe.findById(req.body.recipeId);
     if (!recipe) return res.status(400).send('Invalid recipe.');
 
-    console.log(req.params.id)
     const profile = await Profile.findById(req.params.id);
     if (!profile) return res.status(404).send('Profile not found.');
 
@@ -39,6 +38,10 @@ router.patch('/', auth, async (req, res) => {
         await session.withTransaction(async () => {
             profile.saved.push(recipe._id);
             await profile.save({ session });
+
+            if (!recipe.savedBy?.some((id) => id.toString() === profile._id.toString())) {
+                recipe.savedBy.push(profile._id);
+            }
 
             recipe.saves++;
             await recipe.save({ session });
@@ -73,6 +76,12 @@ router.delete('/', auth, async (req, res) => {
             await Profile.updateOne(
                 { _id: profile._id },
                 { $pull: { saved: req.body.recipeId } },
+                { session }
+            );
+
+            await Recipe.updateOne(
+                { _id: req.body.recipeId },
+                { $pull: { savedBy: profile._id } },
                 { session }
             );
 

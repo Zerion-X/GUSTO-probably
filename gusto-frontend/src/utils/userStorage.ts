@@ -1,5 +1,6 @@
 export interface User {
   id: string;
+  profileId?: string;
   username: string;
   email: string;
   token?: string;

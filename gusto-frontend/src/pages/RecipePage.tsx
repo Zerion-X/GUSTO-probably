@@ -1,19 +1,83 @@
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Clock3, ChefHat, Heart, Bookmark } from "lucide-react";
-import { getRecipeById } from "../data/recipes";
-import { getPostById } from "../utils/postStorage";
+import { getPostById, type RecipePost } from "../utils/postStorage";
+import { fetchRecipeById, API_BASE_URL, type RecipeResponse } from "../utils/api";
 import AnimatedBackground from "../components/Layout/AnimatedBackground";
 
 export default function RecipePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const isPostView =
-    new URLSearchParams(location.search).get("type") === "post";
-  const recipe = !isPostView ? getRecipeById(id) : undefined;
-  const post = getPostById(id);
+  const isPostView = new URLSearchParams(location.search).get("type") === "post";
 
-  const item = recipe ?? post;
+  const [recipe, setRecipe] = useState<RecipeResponse | null>(null);
+  const [post, setPost] = useState<RecipePost | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    let mounted = true;
+    setLoading(true);
+
+    void (async () => {
+      try {
+        if (isPostView) {
+          const data = await getPostById(id);
+          if (mounted) setPost(data);
+        } else {
+          const data = await fetchRecipeById(id);
+          if (mounted) setRecipe(data);
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [id, isPostView]);
+
+  type RecipeDetail = RecipeResponse & {
+    id: string | undefined;
+    image: string;
+    ingredients: string[];
+    steps: string[];
+  };
+
+  const item = !isPostView
+    ? recipe
+      ? {
+          ...recipe,
+          id: recipe._id ?? id,
+          image:
+            recipe.imageData && recipe.imageData.startsWith("data")
+              ? recipe.imageData
+              : recipe.imageData
+              ? `${API_BASE_URL}${recipe.imageData}`
+              : "",
+          ingredients: recipe.ingredients ?? [],
+          steps: recipe.steps ?? [],
+        }
+      : null
+    : post;
+
+  const recipeItem = !isPostView && item ? (item as RecipeDetail) : null;
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#FFF8EA]">
+        <p className="text-[#8B5A3C]">Loading...</p>
+      </div>
+    );
+  }
 
   if (!item) {
     return (
@@ -105,9 +169,9 @@ export default function RecipePage() {
                 <div>
                   <h2 className="mb-3 text-2xl text-[#3A2419]">Ingredients</h2>
                   <ul className="space-y-2 text-[#8B5A3C]">
-                    {"ingredients" in item ? (
+                    {recipeItem && recipeItem.ingredients.length > 0 ? (
                       <ul>
-                        {item.ingredients.map((ingredient) => (
+                        {recipeItem.ingredients.map((ingredient) => (
                           <li
                             key={ingredient}
                             className="flex items-start gap-2"
@@ -126,14 +190,18 @@ export default function RecipePage() {
                 <div>
                   <h2 className="mb-3 text-2xl text-[#3A2419]">Steps</h2>
                   <ol className="space-y-3 text-[#8B5A3C]">
-                    {item.steps.map((step, index) => (
-                      <li key={step} className="flex gap-3">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#C47A2C] text-sm font-semibold text-white">
-                          {index + 1}
-                        </span>
-                        <span>{step}</span>
-                      </li>
-                    ))}
+                    {(item.steps ?? []).length > 0 ? (
+                      item.steps.map((step, index) => (
+                        <li key={`${step}-${index}`} className="flex gap-3">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#C47A2C] text-sm font-semibold text-white">
+                            {index + 1}
+                          </span>
+                          <span>{step}</span>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-[#8B5A3C]">No steps available.</li>
+                    )}
                   </ol>
                 </div>
               </div>
