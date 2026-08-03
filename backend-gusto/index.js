@@ -1,9 +1,10 @@
 const express = require("express");
 const app = express();
-const winston = require('winston')
 const auth = require('./routes/auth');
 const config = require('config');
+const winston = require('winston');
 
+require('./setup/logger')();
 require('./setup/routes') (app);
 require('./setup/db')();
 

@@ -11,7 +11,7 @@ import {
 import { updatePostInteraction } from "../../utils/postStorage";
 
 export type RecipeCardProps = {
-  id: number;
+  id: string;
   image: string;
   name: string;
   summary: string;
